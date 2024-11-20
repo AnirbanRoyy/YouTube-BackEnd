@@ -37,15 +37,15 @@ router.route("/logout").post(verifyJWT, logoutUser);
 router.route("/refresh-token").post(refreshAccessToken);
 router.route("/change-password").post(verifyJWT, changeCurrentPassword);
 router.route("/get-user").post(verifyJWT, getCurrentUser);
-router.route("/update-user-details").post(verifyJWT, updateUserDetails);
+router.route("/update-user-details").patch(verifyJWT, updateUserDetails);
 router.route("/get-user-channel-profile").post(verifyJWT, getUserChannelProfile)
 
-router.route("/update-avatar").post(
+router.route("/update-avatar").patch(
     upload.single("avatar"),
     verifyJWT,
     updateAvatar
 );
-router.route("/update-coverImage").post(
+router.route("/update-coverImage").patch(
     upload.single("coverImage"),
     verifyJWT,
     updateCoverImage
