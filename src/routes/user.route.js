@@ -41,13 +41,13 @@ router.route("/update-user-details").patch(verifyJWT, updateUserDetails);
 router.route("/get-user-channel-profile").post(verifyJWT, getUserChannelProfile)
 
 router.route("/update-avatar").patch(
-    upload.single("avatar"),
     verifyJWT,
+    upload.single("avatar"),
     updateAvatar
 );
 router.route("/update-coverImage").patch(
-    upload.single("coverImage"),
     verifyJWT,
+    upload.single("coverImage"),
     updateCoverImage
 );
 
