@@ -372,10 +372,7 @@ const updateCoverImage = asyncHandler(async (req, res) => {
 
 const getUserChannelProfile = asyncHandler(async (req, res) => {
     // get username from the url
-    const { username } = req.body;
-
-    console.log(req.params);
-    
+    const { username } = req.params;
 
     if (!username?.trim()) {
         throw new ApiError(
