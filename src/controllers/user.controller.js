@@ -43,7 +43,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
     // create user
     const user = await User.create({
-        username,
+        username: username.split(" ").join(""), // the user might send a username with spaces that might cause problem when getting user channel details from url
         fullName,
         email,
         password,
