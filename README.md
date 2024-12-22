@@ -23,7 +23,7 @@ This project is a complete backend solution built with Node.js, Express.js, Mong
 1. **Clone the repository:**
 
    ```bash
-   git clone https://github.com/yourusername/your-repo.git
+   git clone https://github.com/AnirbanRoyy/YouTube-BackEnd your-repo
    cd your-repo
 
 2. **Install dependencies:**
