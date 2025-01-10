@@ -103,7 +103,7 @@ const updateComment = asyncHandler(async (req, res) => {
         throw new ApiError(401, "No comment matches the id as commentId");
     }
 
-    if (req.user._id.toString() !== comment.owner.toString()) {
+    if (req?.user?._id?.toString() !== comment?.owner?.toString()) {
         throw new ApiError(401, "Only the owner of the comment can edit it");
     }
 

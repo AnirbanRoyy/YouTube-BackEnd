@@ -49,23 +49,34 @@ This project is a complete backend solution built with Node.js, Express.js, Mong
 
 - **Register User**
   - `POST /api/v1/users/register`
-  - Body: `username`, `email`, `password`, `fullName`, `avatar` (file), `coverImage` (file)
+  - Body: 
+    - `username`: String (make sure to send username without any spaces. If you want to include space, use some other characters)
+    - `email`: String
+    - `password`: String
+    - `fullName`: String
+    - `avatar`: File
+    - `coverImage`: File (optional)
 
 - **Login User**
   - `POST /api/v1/users/login`
-  - Body: `username/email`, `password`
+  - Body: 
+    - `username` or `email`: String
+    - `password`: String
 
 - **Logout User**
   - `POST /api/v1/users/logout`
-  - Requires: Authentication
+  - Requires: Authentication (send the accessToken as cookie or as authorization header)
 
 - **Refresh Token**
   - `POST /api/v1/users/refresh-token`
+  - Requires: refreshToken (send the refreshToken as cookie or as authorization header)
 
 - **Change Password**
   - `POST /api/v1/users/change-password`
   - Requires: Authentication
-  - Body: `oldPassword`, `newPassword`
+  - Body: 
+    - `oldPassword`: String
+    - `newPassword`: String
 
 - **Get Current User**
   - `GET /api/v1/users/get-user`
@@ -74,17 +85,21 @@ This project is a complete backend solution built with Node.js, Express.js, Mong
 - **Update User Details**
   - `PATCH /api/v1/users/update-user-details`
   - Requires: Authentication
-  - Body: `email`, `fullName`
+  - Body: 
+    - `email`: String (optional)
+    - `fullName`: String (optional)
 
 - **Update Avatar**
   - `PATCH /api/v1/users/update-avatar`
   - Requires: Authentication
-  - Body: `avatar` (file)
+  - Body: 
+    - `avatar`: File
 
 - **Update Cover Image**
   - `PATCH /api/v1/users/update-coverImage`
   - Requires: Authentication
-  - Body: `coverImage` (file)
+  - Body: 
+    - `coverImage`: File
 
 - **Get User Channel Profile**
   - `POST /api/v1/users/get-user-channel-profile/:username`
@@ -99,13 +114,20 @@ This project is a complete backend solution built with Node.js, Express.js, Mong
 - **Publish Video**
   - `POST /api/v1/videos/publish-video`
   - Requires: Authentication
-  - Body: `title`, `description`, `videoFile` (file), `thumbnail` (file)
+  - Body: 
+    - `title`: String
+    - `description`: String
+    - `videoFile`: File
+    - `thumbnail`: File
 
 ### Comment Routes
 
 - **Get Video Comments**
   - `GET /api/v1/comments/:videoId`
-  - Query Parameters: `page`, `limit`
+  - Query Parameters: 
+    - `page`: Number (optional)
+    - `limit`: Number (optional)
+  - When a comment is fetched, attach the `_id` of each comment to the 'div' element as 'id', so that you can request for the particular comment using comment `_id` later.
 
 ## Middleware
 
@@ -129,3 +151,4 @@ This project is a complete backend solution built with Node.js, Express.js, Mong
 ## Acknowledgments
 
 Credit goes to [Hitesh Choudhary](https://www.youtube.com/@chaiaurcode) for inspiration and guidance.
+
