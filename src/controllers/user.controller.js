@@ -207,6 +207,11 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
         user._id
     );
 
+    user.refreshToken = refreshToken;
+    await user.save({
+        validateBeforeSave: false,
+    });
+
     const options = {
         httpOnly: true,
         secure: true,
@@ -296,14 +301,14 @@ const updateAvatar = asyncHandler(async (req, res) => {
     if (!avatarLocalPath) {
         throw new ApiError(400, "Avatar Local Path not found to update");
     }
-    
+
     // upload on cloudinary
     const avatar = await uploadOnCloudinary(avatarLocalPath);
-    
+
     // delete old image
     const oldAvatarUrl = req?.user?.avatar;
     if (!oldAvatarUrl) {
-        throw new ApiError(401, "oldAvatarUrl not found")
+        throw new ApiError(401, "oldAvatarUrl not found");
     }
 
     deleteFromCloudinary(oldAvatarUrl);
@@ -326,7 +331,6 @@ const updateAvatar = asyncHandler(async (req, res) => {
             new: true,
         }
     ).select("-password");
-
 
     return res
         .status(200)
@@ -436,30 +440,29 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         },
     ]);
 
-    if (!channel.length) {  // because the output is an array of objects
+    if (!channel.length) {
+        // because the output is an array of objects
         throw new ApiError(
             404,
             "No channel found while getting userChannelProfile"
         );
     }
 
-    return res
-        .status(200)
-        .json(
-            new ApiResponse(
-                200,
-                channel?.[0],   // because we only have one object in the array
-                "User Channel Profile fetched successfully"
-            )
-        );
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            channel?.[0], // because we only have one object in the array
+            "User Channel Profile fetched successfully"
+        )
+    );
 });
 
-const getWatchHistory = asyncHandler(async(req, res) => {
+const getWatchHistory = asyncHandler(async (req, res) => {
     const user = await User.aggregate([
         {
             $match: {
-                _id: req.user._id
-            }
+                _id: req.user._id,
+            },
         },
         {
             $lookup: {
@@ -481,41 +484,41 @@ const getWatchHistory = asyncHandler(async(req, res) => {
                                     $project: {
                                         username: 1,
                                         fullName: 1,
-                                        avatar: 1
-                                    }
-                                }
-                            ]
-                        }
+                                        avatar: 1,
+                                    },
+                                },
+                            ],
+                        },
                     },
                     {
                         $addFields: {
                             owner: {
-                                $arrayElemAt: [ "$owner", 0 ] 
-                            }
-                        }
-                    }
-                ]
-            }
+                                $arrayElemAt: ["$owner", 0],
+                            },
+                        },
+                    },
+                ],
+            },
         },
         {
             $addFields: {
                 watchHistory: {
-                    $arrayElemAt: [ "$watchHistory", 0 ] 
-                }
-            }
-        }
-    ])
+                    $arrayElemAt: ["$watchHistory", 0],
+                },
+            },
+        },
+    ]);
 
     return res
-    .status(200)
-    .json(
-        new ApiResponse(
-            200,
-            user.watchHistory,
-            "Watch History fetched successfully"
-        )
-    )
-})
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                user.watchHistory,
+                "Watch History fetched successfully"
+            )
+        );
+});
 
 export {
     registerUser,
@@ -528,5 +531,5 @@ export {
     updateAvatar,
     updateCoverImage,
     getUserChannelProfile,
-    getWatchHistory
+    getWatchHistory,
 };
