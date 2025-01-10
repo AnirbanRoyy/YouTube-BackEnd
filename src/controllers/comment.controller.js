@@ -35,11 +35,12 @@ const getVideoComments = asyncHandler(async (req, res) => {
         },
         {
             $project: {
+                _id: 1, // so that the frontend person can attach this _id as a id to the div while creating the comment
                 content: 1,
                 userDetails: {
                     username: 1,
                     fullName: 1,
-                    avatar: 1
+                    avatar: 1,
                 },
                 createdAt: 1,
             },
@@ -89,4 +90,15 @@ const addComment = asyncHandler(async (req, res) => {
     );
 });
 
-export { getVideoComments, addComment };
+const updateComment = asyncHandler(async (req, res) => {
+    const commentId = req.params;
+    const {content} = req.body;
+
+    if (!content.trim()) {
+        throw new ApiError(401, "No content found while editing the comment");
+    }
+
+    
+});
+
+export { getVideoComments, addComment, updateComment };
