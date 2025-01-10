@@ -1,6 +1,8 @@
-import { Comment } from "../models/comment.model";
-import { ApiResponse } from "../utils/ApiResponse";
-import { asyncHandler } from "../utils/asyncHandler";
+import { Comment } from "../models/comment.model.js";
+import { Video } from "../models/video.model.js";
+import { ApiError } from "../utils/ApiError.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
 const getVideoComments = asyncHandler(async (req, res) => {
     const { videoId } = req.params;
@@ -57,4 +59,32 @@ const getVideoComments = asyncHandler(async (req, res) => {
     );
 });
 
-export { getVideoComments };
+const addComment = asyncHandler(async (req, res) => {
+    const videoId = req.params;
+    const { content } = req.body;
+
+    if (!content?.trim()) {
+        throw new ApiError(401, "No content found while adding comment");
+    }
+
+    const video = await Video.findById(videoId);
+    if (!video) {
+        throw new ApiError(404, "No video found while adding comment");
+    }
+
+    const comment = await Comment.create({
+        content,
+        video: videoId,
+        owner: video.owner,
+    });
+
+    if (!comment) {
+        throw new ApiError(500, "Failed to add a comment");
+    }
+
+    res.status(200).json(
+        new ApiResponse(200, comment, "Comment added successfully")
+    );
+});
+
+export { getVideoComments, addComment };
