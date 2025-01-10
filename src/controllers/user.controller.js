@@ -491,20 +491,9 @@ const getWatchHistory = asyncHandler(async (req, res) => {
                         },
                     },
                     {
-                        $addFields: {
-                            owner: {
-                                $arrayElemAt: ["$owner", 0],
-                            },
-                        },
+                        $unwind: "$owner",
                     },
                 ],
-            },
-        },
-        {
-            $addFields: {
-                watchHistory: {
-                    $arrayElemAt: ["$watchHistory", 0],
-                },
             },
         },
     ]);
@@ -514,7 +503,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
         .json(
             new ApiResponse(
                 200,
-                user.watchHistory,
+                user[0].watchHistory,
                 "Watch History fetched successfully"
             )
         );

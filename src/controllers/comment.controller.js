@@ -19,22 +19,11 @@ const getVideoComments = asyncHandler(async (req, res) => {
         },
         {
             $lookup: {
-                from: "videos",
-                localField: "video",
-                foreignField: "_id",
-                as: "videoDetails",
-            },
-        },
-        {
-            $lookup: {
                 from: "users",
                 localField: "owner",
                 foreignField: "_id",
                 as: "userDetails",
             },
-        },
-        {
-            $unwind: "$videoDetails",
         },
         {
             $unwind: "$userDetails",
@@ -47,8 +36,11 @@ const getVideoComments = asyncHandler(async (req, res) => {
         {
             $project: {
                 content: 1,
-                videoDetails: 1,
-                userDetails: 1,
+                userDetails: {
+                    username: 1,
+                    fullName: 1,
+                    avatar: 1
+                },
                 createdAt: 1,
             },
         },
