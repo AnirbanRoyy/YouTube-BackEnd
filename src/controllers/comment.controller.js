@@ -11,7 +11,7 @@ const getVideoComments = asyncHandler(async (req, res) => {
     // Ensure `limit` is a valid positive integer, default to 10 if invalid
     const parsedLimit = Math.max(parseInt(limit) || 10, 1);
 
-    const comments = await Comment.aggregate([
+    const commentsAggregate = await Comment.aggregate([
         {
             $match: {
                 video: videoId,
@@ -40,19 +40,29 @@ const getVideoComments = asyncHandler(async (req, res) => {
             $unwind: "$userDetails",
         },
         {
-            $skip: (page - 1) * parsedLimit, // Pagination: skips to the correct page
-        },
-        {
-            $limit: parsedLimit, // Limits the number of comments per page
+            $sort: {
+                createdAt: -1,
+            },
         },
         {
             $project: {
                 content: 1,
                 videoDetails: 1,
                 userDetails: 1,
+                createdAt: 1,
             },
         },
     ]);
+
+    const options = {
+        limit: parsedLimit,
+        page,
+    };
+
+    const comments = await Comment.aggregatePaginate(
+        commentsAggregate,
+        options
+    );
 
     res.status(200).json(
         new ApiResponse(200, comments, "Comments fetched successfully!")
