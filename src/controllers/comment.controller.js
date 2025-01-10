@@ -78,7 +78,7 @@ const addComment = asyncHandler(async (req, res) => {
     const comment = await Comment.create({
         content,
         video: videoId,
-        owner: video.owner,
+        owner: req.user._id,
     });
 
     if (!comment) {
@@ -91,14 +91,41 @@ const addComment = asyncHandler(async (req, res) => {
 });
 
 const updateComment = asyncHandler(async (req, res) => {
-    const commentId = req.params;
-    const {content} = req.body;
+    const { commentId } = req.params;
+    const { content } = req.body;
 
     if (!content.trim()) {
         throw new ApiError(401, "No content found while editing the comment");
     }
 
-    
+    const comment = await Comment.findById(commentId);
+    if (!comment) {
+        throw new ApiError(401, "No comment matches the id as commentId");
+    }
+
+    if (req.user._id.toString() !== comment.owner.toString()) {
+        throw new ApiError(401, "Only the owner of the comment can edit it");
+    }
+
+    const updatedComment = await Comment.findByIdAndUpdate(
+        commentId,
+        {
+            $set: {
+                content,
+            },
+        },
+        {
+            new: true,
+        }
+    );
+
+    if (!updatedComment) {
+        throw new ApiError(500, "Failed to update the comment");
+    }
+
+    res.status(200).json(
+        new ApiResponse(200, updatedComment, "Comment updated successfully")
+    );
 });
 
 export { getVideoComments, addComment, updateComment };
