@@ -128,4 +128,27 @@ const updateComment = asyncHandler(async (req, res) => {
     );
 });
 
-export { getVideoComments, addComment, updateComment };
+const deleteComment = asyncHandler(async (req, res) => {
+    const { commentId } = req.params;
+
+    const comment = await Comment.findById(commentId);
+    if (!comment) {
+        throw new ApiError(
+            401,
+            "Invalid commentId sent. No such comment exists"
+        );
+    }
+
+    if (req?.user?._id.toString() !== comment.owner.toString()) {
+        throw new ApiError(401, "Not authorized to delete this comment");
+    }
+
+    await Comment.findByIdAndDelete(commentId);
+    // No need for an additional check here since the comment's existence is already verified
+
+    res.status(200).json(
+        new ApiResponse(200, {}, "Comment deleted successfully")
+    );
+});
+
+export { getVideoComments, addComment, updateComment, deleteComment };
