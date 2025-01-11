@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Comment } from "../models/comment.model.js";
 import { Video } from "../models/video.model.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -11,49 +12,52 @@ const getVideoComments = asyncHandler(async (req, res) => {
     // Ensure `limit` is a valid positive integer, default to 10 if invalid
     const parsedLimit = Math.max(parseInt(limit) || 10, 1);
 
-    const commentsAggregate = await Comment.aggregate([
-        {
-            $match: {
-                video: videoId,
-            },
-        },
-        {
-            $lookup: {
-                from: "users",
-                localField: "owner",
-                foreignField: "_id",
-                as: "userDetails",
-            },
-        },
-        {
-            $unwind: "$userDetails",
-        },
-        {
-            $sort: {
-                createdAt: -1,
-            },
-        },
-        {
-            $project: {
-                _id: 1, // so that the frontend person can attach this _id as a id to the div while creating the comment
-                content: 1,
-                userDetails: {
-                    username: 1,
-                    fullName: 1,
-                    avatar: 1,
-                },
-                createdAt: 1,
-            },
-        },
-    ]);
-
     const options = {
         limit: parsedLimit,
         page,
     };
 
     const comments = await Comment.aggregatePaginate(
-        commentsAggregate,
+        Comment.aggregate([
+            {
+                $match: {
+                    video: mongoose.Types.ObjectId(videoId),
+                },
+            },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "owner",
+                    foreignField: "_id",
+                    as: "userDetails",
+                    pipeline: [
+                        {
+                            $project: {
+                                username: 1,
+                                fullName: 1,
+                                avatar: 1,
+                            },
+                        },
+                    ],
+                },
+            },
+            {
+                $unwind: "$userDetails",
+            },
+            {
+                $sort: {
+                    createdAt: -1,
+                },
+            },
+            {
+                $project: {
+                    _id: 1, // so that the frontend person can attach this _id as a id to the div while creating the comment
+                    content: 1,
+                    userDetails: 1,
+                    createdAt: 1,
+                },
+            },
+        ]),
         options
     );
 
@@ -63,7 +67,7 @@ const getVideoComments = asyncHandler(async (req, res) => {
 });
 
 const addComment = asyncHandler(async (req, res) => {
-    const videoId = req.params;
+    const { videoId } = req.params;
     const { content } = req.body;
 
     if (!content?.trim()) {
