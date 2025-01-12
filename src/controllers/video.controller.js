@@ -17,8 +17,8 @@ const publishVideo = asyncHandler(async (req, res) => {
     }
 
     // get video and thumbnail through multer
-    const videoLocalPath = req.files?.videoFile?.path;
-    const thumbnailLocalPath = req.file?.thumbnail?.path;
+    const videoLocalPath = req.files?.videoFile?.[0]?.path;
+    const thumbnailLocalPath = req.files?.thumbnail?.[0]?.path;
     if (!videoLocalPath) {
         throw new ApiError(
             401,
@@ -43,7 +43,7 @@ const publishVideo = asyncHandler(async (req, res) => {
     }
 
     // Create a video document
-    const video = await Video({
+    const video = await Video.create({
         videoFile,
         description,
         title,
