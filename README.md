@@ -50,7 +50,7 @@ This project is a complete backend solution built with Node.js, Express.js, Mong
 - **Register User**
   - `POST /api/v1/users/register`
   - Body: 
-    - `username`: String (make sure to send username without any spaces. If you want to include space, use some other characters)
+    - `username`: String (make sure to send the username without any spaces. If you want to include spaces, use some other characters)
     - `email`: String
     - `password`: String
     - `fullName`: String
@@ -65,11 +65,11 @@ This project is a complete backend solution built with Node.js, Express.js, Mong
 
 - **Logout User**
   - `POST /api/v1/users/logout`
-  - Requires: Authentication (send the accessToken as cookie or as authorization header)
+  - Requires: Authentication (send the accessToken as a cookie or as an authorization header)
 
 - **Refresh Token**
   - `POST /api/v1/users/refresh-token`
-  - Requires: refreshToken (send the refreshToken as cookie or as authorization header)
+  - Requires: `refreshToken` (send the refreshToken as a cookie or as an authorization header)
 
 - **Change Password**
   - `POST /api/v1/users/change-password`
@@ -127,7 +127,42 @@ This project is a complete backend solution built with Node.js, Express.js, Mong
   - Query Parameters: 
     - `page`: Number (optional)
     - `limit`: Number (optional)
-  - When a comment is fetched, attach the `_id` of each comment to the 'div' element as 'id', so that you can request for the particular comment using comment `_id` later.
+  - When a comment is fetched, attach the `_id` of each comment to the `div` element as `id`, so that you can request the particular comment using the comment `_id` later.
+
+- **Add Comment**
+  - `POST /api/v1/comments/add-comment/:videoId`
+  - Requires: Authentication
+  - Body:
+    - `content`: String
+
+- **Update Comment**
+  - `POST /api/v1/comments/update-comment/:commentId`
+  - Requires: Authentication
+  - Body:
+    - `content`: String
+
+- **Delete Comment**
+  - `POST /api/v1/comments/delete-comment/:commentId`
+  - Requires: Authentication
+
+### Tweet Routes
+
+- **Create Tweet**
+    - `POST /api/v1/tweets/create-tweet`
+    - Requires: Authentication
+    - Body: 
+        - `content`: String 
+- **Get User Tweets**
+    - `GET /api/v1/tweets/:userId`
+    - Query Parameters:
+        - `page`: Number (for pagination, optional)
+        - `limit`: Number (results per page, optional) 
+- **Update Tweet**
+    - `PATCH /api/v1/tweets/:tweetId`
+    - Requires: Authentication
+    - Body:
+        - `content`: String (the updated content of the tweet)
+
 
 ## Middleware
 
