@@ -103,4 +103,56 @@ const getUserTweets = asyncHandler(async (req, res) => {
     );
 });
 
-export { createTweet, getUserTweets };
+const updateTweet = asyncHandler(async (req, res) => {
+    const { tweetId } = req.params;
+    const { content } = req.body;
+
+    // Ensure the user is authenticated
+    if (!req?.user?._id) {
+        throw new ApiError(401, "User not Authenticated to update the tweet");
+    }
+
+    // Validate tweetId
+    if (!tweetId) {
+        throw new ApiError(400, "Send tweetId to update the tweet");
+    }
+
+    // Validate content
+    if (!content?.trim()) {
+        throw new ApiError(400, "Content is required to update the tweet");
+    }
+
+    // Find the tweet by ID
+    const tweet = await Tweet.findById(tweetId);
+    if (!tweet) {
+        throw new ApiError(404, "No such tweet exists");
+    }
+
+    // Check if the authenticated user is the owner of the tweet
+    if (tweet?.owner?.toString() !== req.user._id.toString()) {
+        throw new ApiError(403, "Only the owner of the tweet can edit it"); // unauthorized access to tweet
+    }
+
+    // Update the tweet
+    const updatedTweet = await Tweet.findByIdAndUpdate(
+        tweetId,
+        {
+            $set: {
+                content,
+            },
+        },
+        {
+            new: true, // Return the updated document
+        }
+    ).select("-owner"); // Exclude the owner field from the response
+    if (!updatedTweet) {
+        throw new ApiError(500, "Failed to update the tweet");
+    }
+
+    // Send a success response
+    res.status(200).json(
+        new ApiResponse(200, updatedTweet, "Tweet updated successfully")
+    );
+});
+
+export { createTweet, getUserTweets, updateTweet };
