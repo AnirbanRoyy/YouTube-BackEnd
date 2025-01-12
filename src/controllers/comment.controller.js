@@ -11,10 +11,11 @@ const getVideoComments = asyncHandler(async (req, res) => {
 
     // Ensure `limit` is a valid positive integer, default to 10 if invalid
     const parsedLimit = Math.max(parseInt(limit) || 10, 1);
+    const parsedPage = Math.max(parseInt(page) || 1, 1);
 
-    const options = {
+    const aggregateOptions = {
         limit: parsedLimit,
-        page,
+        page: parsedPage,
     };
 
     const comments = await Comment.aggregatePaginate(
@@ -58,7 +59,7 @@ const getVideoComments = asyncHandler(async (req, res) => {
                 },
             },
         ]),
-        options
+        aggregateOptions
     );
 
     res.status(200).json(
