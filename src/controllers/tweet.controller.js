@@ -155,4 +155,33 @@ const updateTweet = asyncHandler(async (req, res) => {
     );
 });
 
-export { createTweet, getUserTweets, updateTweet };
+const deleteTweet = asyncHandler(async (req, res) => {
+    const { tweetId } = req.params;
+    if (!tweetId) {
+        throw new ApiError(400, "tweetId is required to delete a tweet");
+    }
+
+    if (!req?.user?._id) {
+        throw new ApiError(401, "User not Authenticated to delete this tweet");
+    }
+
+    const tweet = await Tweet.findById(tweetId);
+    if (!tweet) {
+        throw new ApiError(
+            404,
+            `No tweet found for the tweetId -> ${tweetId} while deleting tweet`
+        );
+    }
+
+    if (req.user._id.toString() !== tweet.owner.toString()) {
+        throw new ApiError(403, "Only the owner of the tweet can delete it");
+    }
+
+    await Tweet.findByIdAndDelete(tweetId);
+
+    res.status(200).json(
+        new ApiResponse(200, {}, "Tweet deleted successfully!")
+    );
+});
+
+export { createTweet, getUserTweets, updateTweet, deleteTweet };
