@@ -6,6 +6,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { deleteFromCloudinary } from "../utils/deleteCloudinary.js";
 import mongoose from "mongoose";
+import { Video } from "../models/video.model.js";
 
 const registerUser = asyncHandler(async (req, res) => {
     // get data from req.body
@@ -461,8 +462,11 @@ const getWatchHistory = asyncHandler(async (req, res) => {
     const user = await User.aggregate([
         {
             $match: {
-                _id: req.user._id,
+                _id: new mongoose.Types.ObjectId(req.user._id),
             },
+        },
+        {
+            $unwind: "$watchHistory",
         },
         {
             $lookup: {
@@ -503,10 +507,43 @@ const getWatchHistory = asyncHandler(async (req, res) => {
         .json(
             new ApiResponse(
                 200,
-                user[0].watchHistory,
+                user[0]?.watchHistory,
                 "Watch History fetched successfully"
             )
         );
+});
+
+const addToWatchHistory = asyncHandler(async (req, res) => {
+    const { videoId } = req.params;
+
+    if (!mongoose.isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid videoId");
+    }
+
+    const video = await Video.findById(videoId);
+    if (!video) {
+        throw new ApiError(
+            404,
+            "No such video found while adding to watchHistory"
+        );
+    }
+
+    const user = await User.findById(req?.user?._id).select(
+        "-password -refreshToken"
+    );
+    if (!user) {
+        throw new ApiError(
+            404,
+            "No such user found while updating watchHistory"
+        );
+    }
+
+    if (!user.watchHistory.includes(videoId)) {
+        user.watchHistory.push(videoId);
+        await user.save({ validateBeforeSave: false });
+    }
+
+    res.status(200).json(new ApiResponse(200, user, "WatchHistory updated!"));
 });
 
 export {
@@ -521,4 +558,5 @@ export {
     updateCoverImage,
     getUserChannelProfile,
     getWatchHistory,
+    addToWatchHistory,
 };
