@@ -11,6 +11,7 @@ import {
     updateCoverImage,
     getUserChannelProfile,
     getWatchHistory,
+    addToWatchHistory,
 } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -39,19 +40,19 @@ router.route("/refresh-token").post(refreshAccessToken);
 router.route("/change-password").post(verifyJWT, changeCurrentPassword);
 router.route("/get-user").get(verifyJWT, getCurrentUser);
 router.route("/update-user-details").patch(verifyJWT, updateUserDetails);
-router.route("/get-user-channel-profile/:username").post(verifyJWT, getUserChannelProfile)
+router
+    .route("/get-user-channel-profile/:username")
+    .post(verifyJWT, getUserChannelProfile);
 
-router.route("/update-avatar").patch(
-    verifyJWT,
-    upload.single("avatar"),
-    updateAvatar
-);
-router.route("/update-coverImage").patch(
-    verifyJWT,
-    upload.single("coverImage"),
-    updateCoverImage
-);
+router
+    .route("/update-avatar")
+    .patch(verifyJWT, upload.single("avatar"), updateAvatar);
+router
+    .route("/update-coverImage")
+    .patch(verifyJWT, upload.single("coverImage"), updateCoverImage);
 
-router.route("/get-watch-history").get(verifyJWT, getWatchHistory)
+router.route("/get-watch-history").get(verifyJWT, getWatchHistory);
+
+router.route("/update-watch-history/:videoId").patch(verifyJWT, addToWatchHistory);
 
 export default router;
