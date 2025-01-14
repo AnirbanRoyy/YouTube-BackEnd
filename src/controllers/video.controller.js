@@ -1,3 +1,4 @@
+import mongoose, { isValidObjectId } from "mongoose";
 import { User } from "../models/user.model.js";
 import { Video } from "../models/video.model.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -45,11 +46,11 @@ const publishVideo = asyncHandler(async (req, res) => {
 
     // Create a video document
     const video = await Video.create({
-        videoFile,
+        videoFile: videoFile.url,
         description,
         title,
-        thumbnail,
-        owner: req.user._id
+        thumbnail: thumbnail.url,
+        owner: req.user._id,
     });
     if (!video) {
         throw new ApiError(500, "Failed to create a video document");
@@ -61,4 +62,55 @@ const publishVideo = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, video, "Video Published successfully"));
 });
 
-export { publishVideo };
+const getVideoById = asyncHandler(async (req, res) => {
+    const { videoId } = req.params;
+
+    if (!isValidObjectId(videoId)) {
+        throw new ApiError(
+            400,
+            "Improper videoId sent while trying to get the video"
+        );
+    }
+
+    const video = await Video.findById(new mongoose.Types.ObjectId(videoId));
+    if (!video) {
+        throw new ApiError(
+            404,
+            "No such video found while trying to get the video"
+        );
+    }
+
+    const videoAggregate = await Video.aggregate([
+        {
+            $match: {
+                _id: new mongoose.Types.ObjectId(videoId),
+            },
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "owner",
+                pipeline: [
+                    {
+                        $project: {
+                            username: 1,
+                            fullName: 1,
+                            avatar: 1,
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            $unwind: "$owner",
+        },
+    ]);
+
+    res.status(200).json(
+        new ApiResponse(200, videoAggregate[0], "Video fetched successfully")
+    );
+});
+
+export { publishVideo, getVideoById };
