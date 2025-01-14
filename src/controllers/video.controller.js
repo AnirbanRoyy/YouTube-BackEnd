@@ -108,6 +108,20 @@ const getVideoById = asyncHandler(async (req, res) => {
         },
     ]);
 
+    // increment views if video fetched successfully
+    await Video.findByIdAndUpdate(videoId, {
+        $inc: {
+            views: 1
+        }
+    });
+
+    // add this video to user watch history
+    await User.findByIdAndUpdate(req?.user?._id, {
+        $addToSet: {
+            watchHistory: videoId
+        }
+    });
+
     res.status(200).json(
         new ApiResponse(200, videoAggregate[0], "Video fetched successfully")
     );
