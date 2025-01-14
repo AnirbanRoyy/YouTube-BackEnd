@@ -13,7 +13,7 @@ router.route("/get-all-tweets/:userId").get(getUserTweets);
 
 // secured routes
 router.route("/add-tweet").post(verifyJWT, createTweet);
-router.route("/update-tweet/:tweetId").post(verifyJWT, updateTweet);
+router.route("/update-tweet/:tweetId").patch(verifyJWT, updateTweet);
 router.route("/delete-tweet/:tweetId").post(verifyJWT, deleteTweet)
 
 export default router;
