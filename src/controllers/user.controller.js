@@ -466,15 +466,11 @@ const getWatchHistory = asyncHandler(async (req, res) => {
             },
         },
         {
-            $unwind: "$watchHistory",
-        },
-        {
             $lookup: {
                 from: "videos",
                 localField: "watchHistory",
                 foreignField: "_id",
                 as: "watchHistory",
-
                 pipeline: [
                     {
                         $lookup: {
@@ -482,7 +478,6 @@ const getWatchHistory = asyncHandler(async (req, res) => {
                             localField: "owner",
                             foreignField: "_id",
                             as: "owner",
-
                             pipeline: [
                                 {
                                     $project: {
@@ -500,23 +495,6 @@ const getWatchHistory = asyncHandler(async (req, res) => {
                 ],
             },
         },
-        {
-            $unwind: "$watchHistory",
-        },
-        {
-            $group: {
-                _id: new mongoose.Types.ObjectId(req.user._id),
-                watchHistory: {
-                    $addToSet: "$watchHistory",
-                },
-            },
-        },
-        {
-            $project: {
-                _id: 0,
-                watchHistory: 1,
-            },
-        },
     ]);
 
     return res
@@ -524,7 +502,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
         .json(
             new ApiResponse(
                 200,
-                user?.[0],
+                user[0].watchHistory,
                 "Watch History fetched successfully"
             )
         );
