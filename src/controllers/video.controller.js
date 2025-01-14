@@ -1,3 +1,4 @@
+import { User } from "../models/user.model.js";
 import { Video } from "../models/video.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -48,6 +49,7 @@ const publishVideo = asyncHandler(async (req, res) => {
         description,
         title,
         thumbnail,
+        owner: req.user._id
     });
     if (!video) {
         throw new ApiError(500, "Failed to create a video document");
