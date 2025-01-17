@@ -6,6 +6,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { deleteFromCloudinary } from "../utils/deleteCloudinary.js";
+import { Comment } from "../models/comment.model.js";
 
 const publishVideo = asyncHandler(async (req, res) => {
     // get data from frontend
@@ -281,4 +282,42 @@ const updateVideo = asyncHandler(async (req, res) => {
     );
 });
 
-export { publishVideo, getVideoById, getAllVideos, updateVideo };
+const deleteVideo = asyncHandler(async (req, res) => {
+    const { videoId } = req.params;
+
+    if (!isValidObjectId(videoId)) {
+        throw new ApiError(
+            400,
+            "Invalid objectId sent while deleting the video"
+        );
+    }
+
+    const video = await Video.findById(videoId);
+    if (!video) {
+        throw new ApiError(404, "No such video found while deletion");
+    }
+
+    if (req.user._is.toString() !== video.owner.toString()) {
+        throw new ApiError(403, "Only the owner of the video can delete it");
+    }
+
+    // delete the uploaded files
+    await deleteFromCloudinary(video.thumbnail);
+    await deleteFromCloudinary(video.videoFile);
+
+    const deletedVideo = await Video.findByIdAndDelete(videoId);
+    if (!deletedVideo) {
+        throw new ApiError(500, "Failed to delete the video");
+    }
+
+    // delete any comments of that video
+    await Comment.deleteMany({
+        video: videoId
+    })
+
+    res.status(200).json(
+        new ApiResponse(200, {}, "Video deleted successfully")
+    );
+});
+
+export { publishVideo, getVideoById, getAllVideos, updateVideo, deleteVideo };
