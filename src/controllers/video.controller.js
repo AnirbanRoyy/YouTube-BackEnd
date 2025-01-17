@@ -312,12 +312,65 @@ const deleteVideo = asyncHandler(async (req, res) => {
 
     // delete any comments of that video
     await Comment.deleteMany({
-        video: videoId
-    })
+        video: videoId,
+    });
 
     res.status(200).json(
         new ApiResponse(200, {}, "Video deleted successfully")
     );
 });
 
-export { publishVideo, getVideoById, getAllVideos, updateVideo, deleteVideo };
+const togglePublishVideo = asyncHandler(async (req, res) => {
+    const { videoId } = req.params;
+
+    if (!isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid videoId sent while toggling publish");
+    }
+
+    const video = await Video.findById(videoId);
+    if (!video) {
+        throw new ApiError(
+            404,
+            "No such video found while toggling the publish button"
+        );
+    }
+
+    if (req.user._id.toString() !== video.owner.toString()) {
+        throw new ApiError(
+            403,
+            "Only the owner of the video can toggle the publish button"
+        );
+    }
+
+    const updatedVideo = await Video.findByIdAndUpdate(
+        videoId,
+        {
+            $set: {
+                isPublished: !video?.isPublished,
+            },
+        },
+        {
+            new: true,
+        }
+    );
+    if (!updatedVideo) {
+        throw new ApiError(500, "Failed to update the toggle button");
+    }
+
+    res.status(200).json(
+        new ApiResponse(
+            200,
+            { isPublished: updatedVideo.isPublished },
+            "Publish button toggled successfully"
+        )
+    );
+});
+
+export {
+    publishVideo,
+    getVideoById,
+    getAllVideos,
+    updateVideo,
+    deleteVideo,
+    togglePublishVideo,
+};
