@@ -1,5 +1,9 @@
 import { Router } from "express";
-import { getVideoById, publishVideo } from "../controllers/video.controller.js";
+import {
+    getAllVideos,
+    getVideoById,
+    publishVideo,
+} from "../controllers/video.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
@@ -21,5 +25,6 @@ router.route("/publish-video").post(
 );
 
 router.route("/get-video/:videoId").get(verifyJWT, getVideoById);
+router.route("/get-all-videos").get(verifyJWT, getAllVideos);
 
 export default router;
