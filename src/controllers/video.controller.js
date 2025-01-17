@@ -5,6 +5,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { deleteFromCloudinary } from "../utils/deleteCloudinary.js";
 
 const publishVideo = asyncHandler(async (req, res) => {
     // get data from frontend
@@ -223,4 +224,61 @@ const getAllVideos = asyncHandler(async (req, res) => {
     );
 });
 
-export { publishVideo, getVideoById, getAllVideos };
+//TODO: update video details like title, description, thumbnail
+const updateVideo = asyncHandler(async (req, res) => {
+    const { videoId } = req.params;
+    if (!isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid videoId sent when updating the video");
+    }
+
+    const video = await Video.findById(videoId);
+    if (!video) {
+        throw new ApiError(404, "No such video found while updating");
+    }
+
+    if (req.user._id.toString() !== video.owner.toString()) {
+        throw new ApiError(403, "Only the owner of the video can update it");
+    }
+
+    const { title, description } = req.body;
+
+    const thumbnailLocalPath = req?.file?.path;
+    let thumbnail = "";
+    if (thumbnailLocalPath) {
+        // delete old thumbnail
+        const oldThumbnail = video.thumbnail;
+        deleteFromCloudinary(oldThumbnail);
+
+        // upload new one
+        thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
+        if (!thumbnail) {
+            throw new ApiError(
+                400,
+                "No thumbnail found when updating the video"
+            );
+        }
+    }
+
+    const updatedVideo = await Video.findByIdAndUpdate(
+        videoId,
+        {
+            $set: {
+                title: title?.trim() || video.title,
+                description: description?.trim() || video.description,
+                thumbnail: thumbnail?.url || video.thumbnail,
+            },
+        },
+        {
+            new: true,
+        }
+    );
+    if (!updatedVideo) {
+        throw new ApiError(500, "Failed to update the video");
+    }
+
+    res.status(200).json(
+        new ApiResponse(200, updatedVideo, "Video updated successfully")
+    );
+});
+
+export { publishVideo, getVideoById, getAllVideos, updateVideo };
