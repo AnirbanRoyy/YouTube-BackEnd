@@ -111,15 +111,15 @@ const getVideoById = asyncHandler(async (req, res) => {
     // increment views if video fetched successfully
     await Video.findByIdAndUpdate(videoId, {
         $inc: {
-            views: 1
-        }
+            views: 1,
+        },
     });
 
     // add this video to user watch history
     await User.findByIdAndUpdate(req?.user?._id, {
         $addToSet: {
-            watchHistory: videoId
-        }
+            watchHistory: videoId,
+        },
     });
 
     res.status(200).json(
@@ -127,4 +127,100 @@ const getVideoById = asyncHandler(async (req, res) => {
     );
 });
 
-export { publishVideo, getVideoById };
+const getAllVideos = asyncHandler(async (req, res) => {
+    const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
+
+    const parsedLimit = Math.max(parseInt(limit) || 10, 1);
+    const parsedPage = Math.max(parseInt(page) || 1, 1);
+
+    const aggregateOptions = {
+        limit: parsedLimit,
+        page: parsedPage,
+    };
+
+    let pipeline = [];
+
+    // add search stage if there is a query
+    if (query.trim()) {
+        pipeline.push({
+            $search: {
+                index: "search-videos",
+                text: {
+                    query: query,
+                    path: ["title", "description"], //search only on title, desc
+                },
+            },
+        });
+    }
+
+    // if the viewer wants to search only for the videos of a particular user
+    if (isValidObjectId(userId)) {
+        pipeline.push({
+            $match: {
+                owner: new mongoose.Types.ObjectId(userId),
+            },
+        });
+    }
+
+    // fetch only the videos that are to be published
+    pipeline.push({
+        $match: {
+            isPublished: true,
+        },
+    });
+
+    //sortBy can be views, createdAt, duration
+    //sortType can be ascending(1) or descending(-1)
+    const validSortFields = ["views", "createdAt", "duration"];
+    const validSortTypes = ["asc", "desc"];
+
+    const sortField = validSortFields.includes(sortBy) ? sortBy : "createdAt"; // Default to createdAt
+    const sortDirection =
+        validSortTypes.includes(sortType) && sortType === "asc" ? 1 : -1; // Default to descending
+
+    pipeline.push({
+        $sort: {
+            [sortField]: sortDirection,
+        },
+    });
+
+    pipeline.push(
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "owner",
+                pipeline: [
+                    {
+                        $project: {
+                            username: 1,
+                            fullName: 1,
+                            avatar: 1,
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            $unwind: "$owner",
+        }
+    );
+
+    const allVideos = await Video.aggregate(pipeline);
+
+    const videoAggregate = await Video.aggregatePaginate(
+        allVideos,
+        aggregateOptions
+    );
+
+    res.status(200).json(
+        new ApiResponse(
+            200,
+            videoAggregate?.docs,
+            "Videos fetched successfully"
+        )
+    );
+});
+
+export { publishVideo, getVideoById, getAllVideos };
