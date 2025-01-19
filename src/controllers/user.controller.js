@@ -7,6 +7,7 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { deleteFromCloudinary } from "../utils/deleteCloudinary.js";
 import mongoose from "mongoose";
 import { Video } from "../models/video.model.js";
+import fs from "fs";
 
 const registerUser = asyncHandler(async (req, res) => {
     // get data from req.body
@@ -313,6 +314,9 @@ const updateAvatar = asyncHandler(async (req, res) => {
     }
 
     deleteFromCloudinary(oldAvatarUrl);
+
+    // remove from local file system
+    fs.unlinkSync(avatarLocalPath);
 
     if (!avatar) {
         throw new ApiError(
