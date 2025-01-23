@@ -130,7 +130,7 @@ const getVideoById = asyncHandler(async (req, res) => {
 });
 
 const getAllVideos = asyncHandler(async (req, res) => {
-    const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
+    const { page = 1, limit = 10, query = "nothing", sortBy, sortType, userId } = req.query;
 
     const parsedLimit = Math.max(parseInt(limit) || 10, 1);
     const parsedPage = Math.max(parseInt(page) || 1, 1);
@@ -143,7 +143,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
     let pipeline = [];
 
     // add search stage if there is a query
-    if (query.trim()) {
+    if (query?.trim()) {
         pipeline.push({
             $search: {
                 index: "search-videos",
