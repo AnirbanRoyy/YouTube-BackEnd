@@ -63,7 +63,7 @@ const getVideoComments = asyncHandler(async (req, res) => {
     );
 
     res.status(200).json(
-        new ApiResponse(200, comments, "Comments fetched successfully!")
+        new ApiResponse(200, comments?.docs, "Comments fetched successfully!")
     );
 });
 
@@ -91,7 +91,19 @@ const addComment = asyncHandler(async (req, res) => {
     }
 
     res.status(200).json(
-        new ApiResponse(200, comment, "Comment added successfully")
+        new ApiResponse(
+            200,
+            {
+                content,
+                userDetails: {
+                    _id: req.user._id,
+                    fullName: req.user.fullName,
+                    username: req.user.username,
+                    avatar: req.user.avatar,
+                },
+            },
+            "Comment added successfully"
+        )
     );
 });
 
