@@ -50,7 +50,7 @@ const registerUser = asyncHandler(async (req, res) => {
         email,
         password,
         avatar: avatar.url,
-        coverImage: coverImage.url || "",
+        coverImage: coverImage?.url || "",  // coverImage maybe null, so do optional chaining
     });
 
     // validate the creation
