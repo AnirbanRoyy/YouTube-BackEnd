@@ -129,6 +129,40 @@ const getVideoById = asyncHandler(async (req, res) => {
     );
 });
 
+const getSelfVideos = asyncHandler(async (req, res) => {
+    const videos = await Video.aggregate([
+        {
+            $match: {
+                owner: new mongoose.Types.ObjectId(req.user._id),
+            },
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "owner",
+                pipeline: [
+                    {
+                        $project: {
+                            username: 1,
+                            fullName: 1,
+                            avatar: 1,
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            $unwind: "$owner",
+        },
+    ]);
+
+    res.status(200).json(
+        new ApiResponse(200, videos, "Videos fetched successfully")
+    );
+});
+
 const getAllVideos = asyncHandler(async (req, res) => {
     let pipeline = [];
 
@@ -165,11 +199,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
     const allVideos = await Video.aggregate(pipeline);
 
     res.status(200).json(
-        new ApiResponse(
-            200,
-            allVideos,
-            "Videos fetched successfully"
-        )
+        new ApiResponse(200, allVideos, "Videos fetched successfully")
     );
 });
 
@@ -245,7 +275,7 @@ const deleteVideo = asyncHandler(async (req, res) => {
         throw new ApiError(404, "No such video found while deletion");
     }
 
-    if (req.user._is.toString() !== video.owner.toString()) {
+    if (req.user._id.toString() !== video.owner.toString()) {
         throw new ApiError(403, "Only the owner of the video can delete it");
     }
 
@@ -317,6 +347,7 @@ const togglePublishVideo = asyncHandler(async (req, res) => {
 export {
     publishVideo,
     getVideoById,
+    getSelfVideos,
     getAllVideos,
     updateVideo,
     deleteVideo,
