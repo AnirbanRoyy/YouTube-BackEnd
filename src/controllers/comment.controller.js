@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { isValidObjectId } from "mongoose";
 import { Comment } from "../models/comment.model.js";
 import { Video } from "../models/video.model.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -94,6 +94,7 @@ const addComment = asyncHandler(async (req, res) => {
         new ApiResponse(
             200,
             {
+                _id: comment._id,
                 content,
                 userDetails: {
                     _id: req.user._id,
@@ -147,6 +148,10 @@ const updateComment = asyncHandler(async (req, res) => {
 
 const deleteComment = asyncHandler(async (req, res) => {
     const { commentId } = req.params;
+
+    if (!isValidObjectId(commentId)) {
+        throw new ApiError("Invalid commentId sent while deleting comment");
+    }
 
     const comment = await Comment.findById(commentId);
     if (!comment) {
