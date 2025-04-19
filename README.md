@@ -1,6 +1,6 @@
 # YouTube Backend Project
 
-This project is a complete backend solution built with Node.js, Express.js, MongoDB, and Mongoose. It includes features such as user authentication, video publishing, commenting, and more.
+This project is a complete backend solution built with Node.js, Express.js, MongoDB, and Mongoose. It includes features such as user authentication, video publishing, commenting, subscriptions, and more.
 
 ## Features
 
@@ -11,6 +11,7 @@ This project is a complete backend solution built with Node.js, Express.js, Mong
 - Subscription System
 - Token-based Authentication with JWT
 - Cloudinary Integration for Media Storage
+- Tweet-like functionality for user posts
 
 ## Prerequisites
 
@@ -25,23 +26,32 @@ This project is a complete backend solution built with Node.js, Express.js, Mong
    ```bash
    git clone https://github.com/AnirbanRoyy/YouTube-BackEnd your-repo
    cd your-repo
+   ```
 
 2. **Install dependencies:**
 
    ```bash
    npm install
+   ```
 
-3. **Set up environment variables:** 
-`Create a .env file in the root directory and add the following variables:`
+3. **Set up environment variables:**  
+   Create a `.env` file in the root directory and add the following variables:
 
    ```bash
-    PORT=3000
-    MONGODB_URI=your_mongodb_uri
-    ACCESS_TOKEN_SECRET=your_access_token_secret
-    REFRESH_TOKEN_SECRET=your_refresh_token_secret
-    CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
-    CLOUDINARY_API_KEY=your_cloudinary_api_key
-    CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+   PORT=3000
+   MONGODB_URI=your_mongodb_uri
+   ACCESS_TOKEN_SECRET=your_access_token_secret
+   REFRESH_TOKEN_SECRET=your_refresh_token_secret
+   CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+   CLOUDINARY_API_KEY=your_cloudinary_api_key
+   CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+   ```
+
+4. **Run the server:**
+
+   ```bash
+   npm run dev
+   ```
 
 ## API Endpoints
 
@@ -49,8 +59,8 @@ This project is a complete backend solution built with Node.js, Express.js, Mong
 
 - **Register User**
   - `POST /api/v1/users/register`
-  - Body: 
-    - `username`: String (make sure to send the username without any spaces. If you want to include spaces, use some other characters)
+  - Body:
+    - `username`: String
     - `email`: String
     - `password`: String
     - `fullName`: String
@@ -59,22 +69,22 @@ This project is a complete backend solution built with Node.js, Express.js, Mong
 
 - **Login User**
   - `POST /api/v1/users/login`
-  - Body: 
+  - Body:
     - `username` or `email`: String
     - `password`: String
 
 - **Logout User**
   - `POST /api/v1/users/logout`
-  - Requires: Authentication (send the accessToken as a cookie or as an authorization header)
+  - Requires: Authentication (send the `accessToken` as a cookie or authorization header)
 
 - **Refresh Token**
   - `POST /api/v1/users/refresh-token`
-  - Requires: `refreshToken` (send the refreshToken as a cookie or as an authorization header)
+  - Requires: `refreshToken` (send as a cookie or authorization header)
 
 - **Change Password**
   - `POST /api/v1/users/change-password`
   - Requires: Authentication
-  - Body: 
+  - Body:
     - `oldPassword`: String
     - `newPassword`: String
 
@@ -85,20 +95,20 @@ This project is a complete backend solution built with Node.js, Express.js, Mong
 - **Update User Details**
   - `PATCH /api/v1/users/update-user-details`
   - Requires: Authentication
-  - Body: 
+  - Body:
     - `email`: String (optional)
     - `fullName`: String (optional)
 
 - **Update Avatar**
   - `PATCH /api/v1/users/update-avatar`
   - Requires: Authentication
-  - Body: 
+  - Body:
     - `avatar`: File
 
 - **Update Cover Image**
   - `PATCH /api/v1/users/update-coverImage`
   - Requires: Authentication
-  - Body: 
+  - Body:
     - `coverImage`: File
 
 - **Get User Channel Profile**
@@ -109,25 +119,55 @@ This project is a complete backend solution built with Node.js, Express.js, Mong
   - `GET /api/v1/users/get-watch-history`
   - Requires: Authentication
 
+- **Add to Watch History**
+  - `PATCH /api/v1/users/update-watch-history/:videoId`
+  - Requires: Authentication
+
 ### Video Routes
 
 - **Publish Video**
   - `POST /api/v1/videos/publish-video`
   - Requires: Authentication
-  - Body: 
+  - Body:
     - `title`: String
     - `description`: String
     - `videoFile`: File
     - `thumbnail`: File
 
+- **Get Video by ID**
+  - `GET /api/v1/videos/get-video/:videoId`
+  - Requires: Authentication
+
+- **Get Self Videos**
+  - `GET /api/v1/videos/get-self-videos`
+  - Requires: Authentication
+
+- **Get All Videos**
+  - `GET /api/v1/videos/get-all-videos`
+
+- **Update Video**
+  - `PATCH /api/v1/videos/update-video/:videoId`
+  - Requires: Authentication
+  - Body:
+    - `title`: String (optional)
+    - `description`: String (optional)
+    - `thumbnail`: File (optional)
+
+- **Delete Video**
+  - `POST /api/v1/videos/delete-video/:videoId`
+  - Requires: Authentication
+
+- **Toggle Publish Video**
+  - `PATCH /api/v1/videos/toggle-publish/:videoId`
+  - Requires: Authentication
+
 ### Comment Routes
 
 - **Get Video Comments**
-  - `GET /api/v1/comments/:videoId`
-  - Query Parameters: 
+  - `GET /api/v1/comments/get-all-comments/:videoId`
+  - Query Parameters:
     - `page`: Number (optional)
     - `limit`: Number (optional)
-  - When a comment is fetched, attach the `_id` of each comment to the `div` element as `id`, so that you can request the particular comment using the comment `_id` later.
 
 - **Add Comment**
   - `POST /api/v1/comments/add-comment/:videoId`
@@ -136,7 +176,7 @@ This project is a complete backend solution built with Node.js, Express.js, Mong
     - `content`: String
 
 - **Update Comment**
-  - `POST /api/v1/comments/update-comment/:commentId`
+  - `PATCH /api/v1/comments/update-comment/:commentId`
   - Requires: Authentication
   - Body:
     - `content`: String
@@ -148,40 +188,54 @@ This project is a complete backend solution built with Node.js, Express.js, Mong
 ### Tweet Routes
 
 - **Create Tweet**
-    - `POST /api/v1/tweets/create-tweet`
-    - Requires: Authentication
-    - Body: 
-        - `content`: String 
-- **Get User Tweets**
-    - `GET /api/v1/tweets/:userId`
-    - Query Parameters:
-        - `page`: Number (for pagination, optional)
-        - `limit`: Number (results per page, optional) 
-- **Update Tweet**
-    - `PATCH /api/v1/tweets/:tweetId`
-    - Requires: Authentication
-    - Body:
-        - `content`: String (the updated content of the tweet)
+  - `POST /api/v1/tweets/add-tweet`
+  - Requires: Authentication
+  - Body:
+    - `content`: String
 
+- **Get User Tweets**
+  - `GET /api/v1/tweets/get-all-tweets/:userId`
+  - Query Parameters:
+    - `page`: Number (optional)
+    - `limit`: Number (optional)
+
+- **Update Tweet**
+  - `PATCH /api/v1/tweets/update-tweet/:tweetId`
+  - Requires: Authentication
+  - Body:
+    - `content`: String
+
+- **Delete Tweet**
+  - `POST /api/v1/tweets/delete-tweet/:tweetId`
+  - Requires: Authentication
+
+### Subscription Routes
+
+- **Toggle Subscription**
+  - `PATCH /api/v1/subscriptions/toggle-subscription/:channelId`
+  - Requires: Authentication
+
+- **Get Channel Subscribers**
+  - `GET /api/v1/subscriptions/get-channel-subscribers/:channelId`
 
 ## Middleware
 
 - **Authentication Middleware**
-  - `verifyJWT` is used to protect routes that require authentication
+  - `verifyJWT` is used to protect routes that require authentication.
 
 - **File Upload Middleware**
-  - `multer` is used for handling multipart/form-data for file uploads
+  - `multer` is used for handling multipart/form-data for file uploads.
 
 ## Utilities
 
 - **Error Handling**
-  - Custom `ApiError` class for handling errors
+  - Custom `ApiError` class for handling errors.
 
 - **Response Handling**
-  - `ApiResponse` class for consistent API responses
+  - `ApiResponse` class for consistent API responses.
 
 - **Cloudinary Integration**
-  - Functions for uploading and deleting media files
+  - Functions for uploading and deleting media files.
 
 ## Acknowledgments
 
