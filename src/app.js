@@ -1,7 +1,6 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import { errorHandler } from "./utils/errorHandler.js";
 
 const app = express();
 
@@ -41,7 +40,5 @@ app.use("/api/v1/videos", videoRouter);
 app.use("/api/v1/comments", commentRouter);
 app.use("/api/v1/tweets", tweetRouter);
 app.use("/api/v1/subscriptions", subscriptionRouter);
-
-app.use(errorHandler);
 
 export default app;
