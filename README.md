@@ -38,7 +38,7 @@ This project is a complete backend solution built with Node.js, Express.js, Mong
    Create a `.env` file in the root directory and add the following variables:
 
    ```bash
-   PORT=3000
+   PORT=8000
    MONGODB_URI=your_mongodb_uri
    ACCESS_TOKEN_SECRET=your_access_token_secret
    REFRESH_TOKEN_SECRET=your_refresh_token_secret
