@@ -1,4 +1,4 @@
-import mongoose, { isValidObjectId } from "mongoose";
+import mongoose, { isValidObjectId, Mongoose } from "mongoose";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { Subscription } from "../models/subscription.model.js";
@@ -35,6 +35,8 @@ const toggleSubscription = asyncHandler(async (req, res) => {
         );
     }
 
+    console.log("Hleloo");
+    
     // if not already subscribed
     await Subscription.create({
         subscriber: req?.user?._id,
@@ -94,10 +96,56 @@ const getChannelSubscribers = asyncHandler(async (req, res) => {
     res.status(200).json(
         new ApiResponse(
             200,
-            subscribers?.subscribers,
-            "Subscriber list of channe fetched successfully"
+            subscribers[0]?.subscribers,
+            "Subscriber list of channel fetched successfully"
         )
     );
 });
 
-export { toggleSubscription, getChannelSubscribers };
+const getSubscribedChannels = asyncHandler(async (req, res) => {
+    const userId = req.user._id;
+
+    const channels = await Subscription.aggregate([
+        {
+            $match: {
+                subscriber: new mongoose.Types.ObjectId(userId),
+            },
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "channel",
+                foreignField: "_id",
+                as: "channel",
+                pipeline: [
+                    {
+                        $project: {
+                            _id: 0,
+                            username: 1,
+                            fullName: 1,
+                            avatar: 1,
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            $group: {
+                _id: "$channel",
+                channels: {
+                    $push: "$channel",
+                },
+            },
+        },
+    ]);
+
+    res.status(200).json(
+        new ApiResponse(
+            200,
+            channels[0]?.channels,
+            "Channel list of subscriber fetched successfully"
+        )
+    );
+});
+
+export { toggleSubscription, getChannelSubscribers, getSubscribedChannels };

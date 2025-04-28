@@ -218,6 +218,10 @@ This project is a complete backend solution built with Node.js, Express.js, Mong
 - **Get Channel Subscribers**
   - `GET /api/v1/subscriptions/get-channel-subscribers/:channelId`
 
+- **Get Subscribed Channels**
+  - `GET /api/v1/subscriptions/get-subscribed-channels`
+  - Requires: Authentication
+
 ## Middleware
 
 - **Authentication Middleware**

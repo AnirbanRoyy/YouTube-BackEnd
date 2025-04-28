@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import { ApiError } from "./utils/ApiError.js";
 
 const app = express();
 
@@ -41,5 +42,28 @@ app.use("/api/v1/videos", videoRouter);
 app.use("/api/v1/comments", commentRouter);
 app.use("/api/v1/tweets", tweetRouter);
 app.use("/api/v1/subscriptions", subscriptionRouter);
+
+// Centralized error-handling middleware
+app.use((err, req, res, next) => {
+    if (res.headersSent) {
+        return next(err); // Delegate to default Express error handler if headers are already sent
+    }
+
+    if (err instanceof ApiError) {
+        return res.status(err.statusCode).json({
+            success: false,
+            statusCode: err.statusCode,
+            message: err.message,
+            errors: err.errors,
+        });
+    }
+
+    // Handle other errors
+    res.status(500).json({
+        success: false,
+        statusCode: 500,
+        message: "Internal Server Error",
+    });
+});
 
 export default app;
