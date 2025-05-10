@@ -402,6 +402,31 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
                 localField: "_id",
                 foreignField: "channel",
                 as: "subscribers",
+                pipeline: [
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "subscriber",
+                            foreignField: "_id",
+                            as: "subscriber",
+                            pipeline: [
+                                {
+                                    $project: {
+                                        "fullName": 1,
+                                        "username": 1,
+                                        "email": 1,
+                                        "avatar": 1,
+                                        "coverImage": 1,
+                                    }
+                                }
+                            ]
+                        },
+                    },
+                    {
+                        $unwind: "$subscriber"
+                    },
+                    { $replaceRoot: { newRoot: "$subscriber" } }
+                ]
             },
         },
         {
@@ -410,6 +435,31 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
                 localField: "_id",
                 foreignField: "subscriber",
                 as: "subscribedTo",
+                pipeline: [
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "channel",
+                            foreignField: "_id",
+                            as: "channel",
+                            pipeline: [
+                                {
+                                    $project: {
+                                        "fullName": 1,
+                                        "username": 1,
+                                        "email": 1,
+                                        "avatar": 1,
+                                        "coverImage": 1,
+                                    }
+                                }
+                            ]
+                        },
+                    },
+                    {
+                        $unwind: "$channel"
+                    },
+                    { $replaceRoot: { newRoot: "$channel" } }
+                ]
             },
         },
         {
@@ -438,7 +488,9 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
                 avatar: 1,
                 coverImage: 1,
                 subscribersCount: 1,
+                subscribers: 1,
                 subscribedToCount: 1,
+                subscribedTo: 1,
                 isSubscribed: 1,
                 watchHistory: 1,
             },
