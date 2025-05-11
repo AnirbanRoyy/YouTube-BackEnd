@@ -383,6 +383,8 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     // get username from the url
     const { username } = req.params;
 
+    const userId = new mongoose.Types.ObjectId(req.user?._id)
+
     if (!username?.trim()) {
         throw new ApiError(
             400,
@@ -473,7 +475,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
                 isSubscribed: {
                     $cond: {
                         if: {
-                            $in: [req.user?._id, "$subscribers.subscriber"],
+                            $in: [userId, "$subscribers._id"],
                         },
                         then: true,
                         else: false,
