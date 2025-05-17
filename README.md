@@ -123,6 +123,10 @@ This project is a complete backend solution built with Node.js, Express.js, Mong
   - `PATCH /api/v1/users/update-watch-history/:videoId`
   - Requires: Authentication
 
+- **Get User Playlists**
+  - `GET /api/v1/users/:userId/playlists`
+  - Requires: Authentication
+
 ### Video Routes
 
 - **Publish Video**
@@ -221,6 +225,42 @@ This project is a complete backend solution built with Node.js, Express.js, Mong
 - **Get Subscribed Channels**
   - `GET /api/v1/subscriptions/get-subscribed-channels`
   - Requires: Authentication
+
+### Playlist Routes
+
+- **Create Playlist**
+  - `POST /api/v1/playlists/`
+  - Requires: Authentication
+  - Body:
+    - `name`: String (required)
+    - `description`: String (optional)
+    - `video`: Array of video IDs (required, at least one)
+
+- **Get Playlist by ID**
+  - `GET /api/v1/playlists/:playlistId`
+  - Requires: Authentication
+
+- **Update Playlist**
+  - `PATCH /api/v1/playlists/:playlistId`
+  - Requires: Authentication
+  - Body:
+    - `name`: String (optional)
+    - `description`: String (optional)
+    - `video`: Array of video IDs (optional)
+
+- **Delete Playlist**
+  - `DELETE /api/v1/playlists/:playlistId`
+  - Requires: Authentication
+
+#### Example Create Playlist Request Body
+```json
+{
+  "name": "My Playlist",
+  "description": "A collection of my favorite videos",
+  "video": ["<videoId1>", "<videoId2>"],
+  "owner": "<ownerId>"
+}
+```
 
 ## Middleware
 
