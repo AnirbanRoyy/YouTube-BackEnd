@@ -8,6 +8,7 @@ import { deleteFromCloudinary } from "../utils/deleteCloudinary.js";
 import mongoose from "mongoose";
 import { Video } from "../models/video.model.js";
 import fs from "fs";
+import { Playlist } from "../models/playlist.model.js";
 
 const registerUser = asyncHandler(async (req, res) => {
     // get data from req.body
@@ -599,6 +600,41 @@ const addToWatchHistory = asyncHandler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, user, "WatchHistory updated!"));
 });
 
+const getUserPlaylists = asyncHandler(async(req, res) => {
+    let { userId } = req.params;
+
+    if (!userId) {
+        userId = req?.user._id;
+    }
+
+    if (!mongoose.isValidObjectId(userId)) {
+        throw new ApiError(400, "invalid userId sent");
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+        throw new ApiError(404, "No such user found");
+    }
+
+    const playlists = await Playlist.aggregatePaginate(
+        Playlist.aggregate([
+            {
+                $match: {
+                    owner: new mongoose.Types.ObjectId(userId)
+                }
+            }
+        ])
+    )
+
+    if (!playlists) {
+        throw new ApiError(500, "Failed to fetch the user's playlists")
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200, playlists.docs, "User playlists fetched successfully!")
+    )
+})
+
 export {
     registerUser,
     loginUser,
@@ -612,4 +648,5 @@ export {
     getUserChannelProfile,
     getWatchHistory,
     addToWatchHistory,
+    getUserPlaylists
 };

@@ -12,6 +12,7 @@ import {
     getUserChannelProfile,
     getWatchHistory,
     addToWatchHistory,
+    getUserPlaylists,
 } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -54,5 +55,7 @@ router
 router.route("/get-watch-history").get(verifyJWT, getWatchHistory);
 
 router.route("/update-watch-history/:videoId").patch(verifyJWT, addToWatchHistory);
+
+router.route("/:userId/playlists").get(verifyJWT, getUserPlaylists);
 
 export default router;
