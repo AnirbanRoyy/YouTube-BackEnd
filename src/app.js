@@ -35,6 +35,7 @@ import videoRouter from "./routes/video.route.js";
 import commentRouter from "./routes/comment.route.js";
 import tweetRouter from "./routes/tweet.route.js";
 import subscriptionRouter from "./routes/subscription.route.js";
+import playlistRouter from "./routes/playlist.route.js";
 
 // declaring the routes
 app.use("/api/v1/users", userRouter);
@@ -42,6 +43,7 @@ app.use("/api/v1/videos", videoRouter);
 app.use("/api/v1/comments", commentRouter);
 app.use("/api/v1/tweets", tweetRouter);
 app.use("/api/v1/subscriptions", subscriptionRouter);
+app.use("/api/v1/playlists", playlistRouter);
 
 // Centralized error-handling middleware
 app.use((err, req, res, next) => {
@@ -63,6 +65,7 @@ app.use((err, req, res, next) => {
         success: false,
         statusCode: 500,
         message: "Internal Server Error",
+        error: err,
     });
 });
 
