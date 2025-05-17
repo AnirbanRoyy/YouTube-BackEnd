@@ -4,6 +4,7 @@ import { Video } from "../models/video.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { User } from "../models/user.model.js";
 
 const getVideoComments = asyncHandler(async (req, res) => {
     const { videoId } = req.params;
@@ -22,7 +23,10 @@ const getVideoComments = asyncHandler(async (req, res) => {
         Comment.aggregate([
             {
                 $match: {
-                    video: new mongoose.Types.ObjectId(videoId),
+                    $and: [
+                        { parentComment: null },
+                        { video: new mongoose.Types.ObjectId(videoId) },
+                    ],
                 },
             },
             {
@@ -84,6 +88,7 @@ const addComment = asyncHandler(async (req, res) => {
         content,
         video: videoId,
         owner: req.user._id,
+        parentComment: null, // top-level
     });
 
     if (!comment) {
@@ -165,12 +170,214 @@ const deleteComment = asyncHandler(async (req, res) => {
         throw new ApiError(401, "Not authorized to delete this comment");
     }
 
+    // delete the replies (if any)
+    const replies = await Comment.aggregate([
+        {
+            $match: {
+                parentComment: new mongoose.Types.ObjectId(commentId),
+            },
+        },
+    ]);
+
+    if (replies.length != 0) {
+        replies.map(async (reply) => {
+            await Comment.findByIdAndDelete(reply._id);
+        });
+    }
+
     await Comment.findByIdAndDelete(commentId);
-    // No need for an additional check here since the comment's existence is already verified
 
     res.status(200).json(
         new ApiResponse(200, {}, "Comment deleted successfully")
     );
 });
 
-export { getVideoComments, addComment, updateComment, deleteComment };
+const addReply = asyncHandler(async (req, res) => {
+    const { commentId } = req.params;
+    const { content } = req.body;
+
+    if (!isValidObjectId(commentId)) {
+        throw new ApiError(400, "invalid commentId sent");
+    }
+
+    const parent = await Comment.findById(commentId);
+
+    if (!parent) {
+        throw new ApiError(404, "No such parent comment found");
+    }
+
+    if (parent.parentComment !== null) {
+        throw new ApiError(
+            400,
+            "Cannot reply to a reply. Only top-level comments can be replied to."
+        );
+    }
+
+    if (content?.trim() === "") {
+        throw new ApiError("no content in the reply");
+    }
+
+    const reply = await Comment.create({
+        content,
+        owner: req.user._id,
+        parentComment: commentId,
+    });
+
+    if (!reply) {
+        throw new ApiError(500, "Failed to create the reply");
+    }
+
+    return res
+        .status(201)
+        .json(new ApiResponse(201, reply, "Reply created successfully"));
+});
+
+const getReplies = asyncHandler(async (req, res) => {
+    const { commentId } = req.params;
+
+    if (!isValidObjectId(commentId)) {
+        throw new ApiError(400, "invalid commentId sent");
+    }
+
+    const parentComment = await Comment.findById(commentId);
+    if (!parentComment) {
+        throw new ApiError(404, "no such parent comment found");
+    }
+
+    const comments = await Comment.aggregatePaginate(
+        Comment.aggregate([
+            {
+                $match: {
+                    parentComment: new mongoose.Types.ObjectId(commentId),
+                },
+            },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "owner",
+                    foreignField: "_id",
+                    as: "owner",
+                    pipeline: [
+                        {
+                            $project: {
+                                fullName: 1,
+                                username: 1,
+                                avatar: 1,
+                            },
+                        },
+                    ],
+                },
+            },
+            {
+                $project: {
+                    content: 1,
+                    owner: 1,
+                },
+            },
+        ])
+    );
+
+    if (!comments) {
+        throw new ApiError(500, "Failed to fetch the replies to the comment");
+    }
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200, comments.docs, "Replies fetched successfully")
+        );
+});
+
+const updateReply = asyncHandler(async (req, res) => {
+    const { commentId, replyId } = req.params;
+    const { content } = req.body;
+
+    if (!content.trim()) {
+        throw new ApiError(401, "No content found while editing the reply");
+    }
+
+    const comment = await Comment.findById(commentId);
+    if (!comment) {
+        throw new ApiError(404, "No such comment found");
+    }
+
+    const reply = await Comment.findById(replyId);
+    if (!reply) {
+        throw new ApiError(404, "No such reply found");
+    }
+
+    if (req?.user?._id?.toString() !== reply?.owner?.toString()) {
+        throw new ApiError(401, "Only the owner of the reply can edit it");
+    }
+
+    if (reply.parentComment.toString() !== comment._id.toString()) {
+        throw new ApiError("parent comment doesn't match");
+    }
+
+    const updatedReply = await Comment.findByIdAndUpdate(
+        replyId,
+        {
+            $set: {
+                content,
+            },
+        },
+        {
+            new: true,
+        }
+    );
+
+    if (!updatedReply) {
+        throw new ApiError(500, "Failed to update the reply");
+    }
+
+    res.status(200).json(
+        new ApiResponse(200, updatedReply, "Reply updated successfully")
+    );
+});
+
+const deleteReply = asyncHandler(async (req, res) => {
+    const { commentId, replyId } = req.params;
+
+    if (!isValidObjectId(commentId)) {
+        throw new ApiError("Invalid commentId sent while deleting comment");
+    }
+
+    const comment = await Comment.findById(commentId);
+    if (!comment) {
+        throw new ApiError(404, "No such comment found");
+    }
+
+    if (!isValidObjectId(replyId)) {
+        throw new ApiError(400, "invalid replyId sent");
+    }
+
+    const reply = await Comment.findById(replyId);
+    if (!reply) {
+        throw new ApiError(404, "No such reply found");
+    }
+
+    if (reply.parentComment.toString() !== comment._id.toString()) {
+        throw new ApiError(400, "parent comment does not match");
+    }
+
+    if (req?.user?._id.toString() !== reply.owner.toString()) {
+        throw new ApiError(401, "Not authorized to delete this reply");
+    }
+
+    await Comment.findByIdAndDelete(replyId);
+
+    res.status(200).json(
+        new ApiResponse(200, {}, "Reply deleted successfully")
+    );
+});
+
+export {
+    getVideoComments,
+    addComment,
+    updateComment,
+    deleteComment,
+    addReply,
+    getReplies,
+    updateReply,
+    deleteReply,
+};

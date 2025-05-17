@@ -189,6 +189,26 @@ This project is a complete backend solution built with Node.js, Express.js, Mong
   - `POST /api/v1/comments/delete-comment/:commentId`
   - Requires: Authentication
 
+- **Add Reply to Comment**
+  - `POST /api/v1/comments/:commentId/replies`
+  - Requires: Authentication
+  - Body:
+    - `content`: String
+
+- **Get Replies for Comment**
+  - `GET /api/v1/comments/:commentId/replies`
+  - Requires: Authentication
+
+- **Update Reply**
+  - `PATCH /api/v1/comments/:commentId/replies/:replyId`
+  - Requires: Authentication
+  - Body:
+    - `content`: String
+
+- **Delete Reply**
+  - `DELETE /api/v1/comments/:commentId/replies/:replyId`
+  - Requires: Authentication
+
 ### Tweet Routes
 
 - **Create Tweet**
