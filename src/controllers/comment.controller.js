@@ -268,12 +268,6 @@ const getReplies = asyncHandler(async (req, res) => {
                     ],
                 },
             },
-            {
-                $project: {
-                    content: 1,
-                    owner: 1,
-                },
-            },
         ])
     );
 
