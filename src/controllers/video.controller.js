@@ -7,6 +7,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { deleteFromCloudinary } from "../utils/deleteCloudinary.js";
 import { Comment } from "../models/comment.model.js";
+import { View } from "../models/view.model.js";
 
 const publishVideo = asyncHandler(async (req, res) => {
     // get data from frontend
@@ -110,12 +111,24 @@ const getVideoById = asyncHandler(async (req, res) => {
         },
     ]);
 
-    // increment views if video fetched successfully
-    await Video.findByIdAndUpdate(videoId, {
-        $inc: {
-            views: 1,
-        },
+    // Check if already viewed
+    const alreadyViewed = await View.findOne({
+        video: videoId,
+        viewer: req.user._id,
     });
+
+    if (!alreadyViewed) {
+        await View.create({
+            video: videoId,
+            viewer: req.user._id,
+        });
+
+        await Video.findByIdAndUpdate(videoId, {
+            $inc: {
+                views: 1,
+            },
+        });
+    }
 
     // add this video to user watch history
     await User.findByIdAndUpdate(req?.user?._id, {
