@@ -171,21 +171,7 @@ const deleteComment = asyncHandler(async (req, res) => {
     }
 
     // delete the replies (if any)
-    const replies = await Comment.aggregate([
-        {
-            $match: {
-                parentComment: new mongoose.Types.ObjectId(commentId),
-            },
-        },
-    ]);
-
-    if (replies.length != 0) {
-        replies.map(async (reply) => {
-            await Comment.findByIdAndDelete(reply._id);
-        });
-    }
-
-    await Comment.findByIdAndDelete(commentId);
+    await Comment.deleteMany({ parentComment: commentId });
 
     res.status(200).json(
         new ApiResponse(200, {}, "Comment deleted successfully")
