@@ -17,6 +17,7 @@ import {
     getUser,
     deleteUser,
     deleteFromWatchHistory,
+    getUserTweets,
 } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -70,5 +71,6 @@ router
     .post(verifyJWT, deleteFromWatchHistory);
 
 router.route("/:userId/playlists").get(verifyJWT, getUserPlaylists);
+router.route("/:userId/tweets").get(verifyJWT, getUserTweets);
 
 export default router;
