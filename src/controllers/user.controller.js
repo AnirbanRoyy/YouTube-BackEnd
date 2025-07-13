@@ -186,7 +186,7 @@ const deleteUser = asyncHandler(async (req, res) => {
     // delete all videos posted by this user
     const deletedVideos = await Video.deleteMany({ owner: userId });
     if (!deletedVideos) {
-        console.warn("Failed to delete the videos uploaded by this user.")
+        console.warn("Failed to delete the videos uploaded by this user.");
     }
 
     const deletedUser = await User.findByIdAndDelete(req.user._id);
@@ -799,6 +799,80 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
         );
 });
 
+const getUserTweets = asyncHandler(async (req, res) => {
+    const { page = 1, limit = 10 } = req.query;
+
+    // Ensure `limit` is a valid positive integer, default to 10 if invalid
+    const parsedLimit = Math.max(parseInt(limit) || 10, 1);
+    const parsedPage = Math.max(parseInt(page) || 1, 1);
+
+    const aggregateOptions = {
+        limit: parsedLimit,
+        page: parsedPage,
+    };
+
+    const { userId } = req.params;
+    if (!userId) {
+        throw new ApiError(
+            401,
+            "userId not received while getting user tweets"
+        );
+    }
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+        throw new ApiError(404, `No user found for the userId : ${userId}`);
+    }
+
+    const tweets = await Tweet.aggregatePaginate(
+        Tweet.aggregate([
+            {
+                $match: {
+                    owner: new mongoose.Types.ObjectId(userId),
+                },
+            },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "owner",
+                    foreignField: "_id",
+                    as: "owner",
+                    pipeline: [
+                        {
+                            $project: {
+                                username: 1,
+                                fullName: 1,
+                                avatar: 1,
+                            },
+                        },
+                    ],
+                },
+            },
+            {
+                $unwind: "$owner",
+            },
+            {
+                $sort: {
+                    createdAt: -1,
+                },
+            },
+            {
+                $project: {
+                    owner: 1,
+                    content: 1,
+                    createdAt: 1,
+                },
+            },
+        ]),
+        aggregateOptions
+    );
+
+    res.status(200).json(
+        new ApiResponse(200, tweets, "Tweets fetched successfully")
+    );
+});
+
 export {
     registerUser,
     getAllUsers,
@@ -817,4 +891,5 @@ export {
     addToWatchHistory,
     deleteFromWatchHistory,
     getUserPlaylists,
+    getUserTweets,
 };
