@@ -70,7 +70,7 @@ router
     .route("/remove-from-watch-history/:videoId")
     .post(verifyJWT, deleteFromWatchHistory);
 
-router.route("/:userId/playlists").get(verifyJWT, getUserPlaylists);
-router.route("/:userId/tweets").get(verifyJWT, getUserTweets);
+router.route("/:userId/playlists").post(verifyJWT, getUserPlaylists);
+router.route("/:userId/tweets").post(verifyJWT, getUserTweets);
 
 export default router;
