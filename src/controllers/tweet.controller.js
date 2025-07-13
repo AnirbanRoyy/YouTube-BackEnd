@@ -1,25 +1,19 @@
-import mongoose from "mongoose";
+import mongoose, { isValidObjectId } from "mongoose";
 import { Tweet } from "../models/tweet.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { User } from "../models/user.model.js";
 
 const createTweet = asyncHandler(async (req, res) => {
     const { content } = req.body;
     if (!content?.trim()) {
-        throw new ApiError(401, "No content found while creating a tweet");
-    }
-
-    if (!req?.user?._id) {
-        throw new ApiError(401, "User not authenticated!");
+        throw new ApiError(400, "No content found while creating a tweet");
     }
 
     const tweet = await Tweet.create({
-        owner: new mongoose.Types.ObjectId(req?.user?._id),
+        owner: new mongoose.Types.ObjectId(req.user._id),
         content,
     });
-
     if (!tweet) {
         throw new ApiError(500, "Failed to create a tweet");
     }
@@ -29,39 +23,20 @@ const createTweet = asyncHandler(async (req, res) => {
     );
 });
 
-const getUserTweets = asyncHandler(async (req, res) => {
+const getAllTweets = asyncHandler(async (req, res) => {
     const { page = 1, limit = 10 } = req.query;
 
     // Ensure `limit` is a valid positive integer, default to 10 if invalid
     const parsedLimit = Math.max(parseInt(limit) || 10, 1);
     const parsedPage = Math.max(parseInt(page) || 1, 1);
 
-    const aggregateOptions = {
-        limit: parsedLimit,
+    const aggreagateOptions = {
         page: parsedPage,
+        limit: parsedLimit,
     };
 
-    const { userId } = req.params;
-    if (!userId) {
-        throw new ApiError(
-            401,
-            "userId not received while getting user tweets"
-        );
-    }
-
-    const user = await User.findById(userId);
-
-    if (!user) {
-        throw new ApiError(404, `No user found for the userId : ${userId}`);
-    }
-
-    const tweets = await Tweet.aggregatePaginate(
+    const allTweets = await Tweet.aggregatePaginate(
         Tweet.aggregate([
-            {
-                $match: {
-                    owner: new mongoose.Types.ObjectId(userId),
-                },
-            },
             {
                 $lookup: {
                     from: "users",
@@ -71,8 +46,8 @@ const getUserTweets = asyncHandler(async (req, res) => {
                     pipeline: [
                         {
                             $project: {
-                                username: 1,
                                 fullName: 1,
+                                username: 1,
                                 avatar: 1,
                             },
                         },
@@ -82,39 +57,70 @@ const getUserTweets = asyncHandler(async (req, res) => {
             {
                 $unwind: "$owner",
             },
-            {
-                $sort: {
-                    createdAt: -1,
-                },
-            },
-            {
-                $project: {
-                    owner: 1,
-                    content: 1,
-                    createdAt: 1,
-                },
-            },
         ]),
-        aggregateOptions
+        aggreagateOptions
     );
+    if (!allTweets) {
+        throw new ApiError(500, "Failed to fetch all the tweets");
+    }
 
-    res.status(200).json(
-        new ApiResponse(200, tweets, "Tweets fetched successfully")
-    );
+    return res
+        .status(200)
+        .json(new ApiResponse(200, allTweets, "Fetched all tweets"));
+});
+
+const getTweet = asyncHandler(async (req, res) => {
+    const { tweetId } = req.params;
+
+    if (!isValidObjectId(tweetId)) {
+        throw new ApiError(400, "Invalid tweetId sent");
+    }
+
+    const tweetExists = await Tweet.findById(tweetId);
+    if (!tweetExists) {
+        throw new ApiError(404, "No such tweet found");
+    }
+
+    const tweet = await Tweet.aggregate([
+        {
+            $match: {
+                _id: new mongoose.Types.ObjectId(tweetId),
+            },
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "owner",
+                pipeline: [
+                    {
+                        $project: {
+                            fullName: 1,
+                            username: 1,
+                            avatar: 1,
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            $unwind: "$owner",
+        },
+    ]);
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, tweet, "Tweet fetched successfully"));
 });
 
 const updateTweet = asyncHandler(async (req, res) => {
     const { tweetId } = req.params;
     const { content } = req.body;
 
-    // Ensure the user is authenticated
-    if (!req?.user?._id) {
-        throw new ApiError(401, "User not Authenticated to update the tweet");
-    }
-
     // Validate tweetId
-    if (!tweetId) {
-        throw new ApiError(400, "Send tweetId to update the tweet");
+    if (!isValidObjectId(tweetId)) {
+        throw new ApiError(400, "Invalid tweetId sent when updating the tweet");
     }
 
     // Validate content
@@ -129,7 +135,7 @@ const updateTweet = asyncHandler(async (req, res) => {
     }
 
     // Check if the authenticated user is the owner of the tweet
-    if (tweet?.owner?.toString() !== req.user._id.toString()) {
+    if (tweet.owner.toString() !== req.user._id.toString()) {
         throw new ApiError(403, "Only the owner of the tweet can edit it"); // unauthorized access to tweet
     }
 
@@ -144,25 +150,49 @@ const updateTweet = asyncHandler(async (req, res) => {
         {
             new: true, // Return the updated document
         }
-    ).select("-owner"); // Exclude the owner field from the response
+    );
     if (!updatedTweet) {
         throw new ApiError(500, "Failed to update the tweet");
     }
 
+    const tweetWithOwner = await Tweet.aggregate([
+        {
+            $match: {
+                _id: new mongoose.Types.ObjectId(updatedTweet._id),
+            },
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "owner",
+                pipeline: [
+                    {
+                        $project: {
+                            fullName: 1,
+                            username: 1,
+                            avatar: 1,
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            $unwind: "$owner",
+        },
+    ]);
+
     // Send a success response
     res.status(200).json(
-        new ApiResponse(200, updatedTweet, "Tweet updated successfully")
+        new ApiResponse(200, tweetWithOwner, "Tweet updated successfully")
     );
 });
 
 const deleteTweet = asyncHandler(async (req, res) => {
     const { tweetId } = req.params;
-    if (!tweetId) {
-        throw new ApiError(400, "tweetId is required to delete a tweet");
-    }
-
-    if (!req?.user?._id) {
-        throw new ApiError(401, "User not Authenticated to delete this tweet");
+    if (!isValidObjectId(tweetId)) {
+        throw new ApiError(400, "Invalid tweetId sent to delete a tweet");
     }
 
     const tweet = await Tweet.findById(tweetId);
@@ -173,15 +203,19 @@ const deleteTweet = asyncHandler(async (req, res) => {
         );
     }
 
+    // Check if the user is authorized to delete the tweet
     if (req.user._id.toString() !== tweet.owner.toString()) {
         throw new ApiError(403, "Only the owner of the tweet can delete it");
     }
 
-    await Tweet.findByIdAndDelete(tweetId);
+    const deletedTweet = await Tweet.findByIdAndDelete(tweetId);
+    if (!deletedTweet) {
+        throw new ApiError(500, "Failed to delete the tweet");
+    }
 
-    res.status(200).json(
-        new ApiResponse(200, {}, "Tweet deleted successfully!")
+    res.status(204).json(
+        new ApiResponse(204, {}, "Tweet deleted successfully!")
     );
 });
 
-export { createTweet, getUserTweets, updateTweet, deleteTweet };
+export { createTweet, getAllTweets, getTweet, updateTweet, deleteTweet };
