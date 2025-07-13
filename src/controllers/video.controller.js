@@ -296,36 +296,53 @@ const deleteVideo = asyncHandler(async (req, res) => {
 });
 
 const getSelfVideos = asyncHandler(async (req, res) => {
-    const videos = await Video.aggregate([
-        {
-            $match: {
-                owner: new mongoose.Types.ObjectId(req.user._id),
+    const { limit = 10, page = 1 } = req.query;
+
+    // Ensure `limit` is a valid positive integer, default to 10 if invalid
+    const parsedLimit = Math.max(parseInt(limit) || 10, 1);
+    const parsedPage = Math.max(parseInt(page) || 1, 1);
+
+    const aggregateOptions = {
+        page: parsedPage,
+        limit: parsedLimit,
+    };
+
+    console.log("HEY");
+    
+    
+    const videos = await Video.aggregatePaginate(
+        Video.aggregate([
+            {
+                $match: {
+                    owner: new mongoose.Types.ObjectId(req.user._id),
+                },
             },
-        },
-        {
-            $lookup: {
-                from: "users",
-                localField: "owner",
-                foreignField: "_id",
-                as: "owner",
-                pipeline: [
-                    {
-                        $project: {
-                            username: 1,
-                            fullName: 1,
-                            avatar: 1,
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "owner",
+                    foreignField: "_id",
+                    as: "owner",
+                    pipeline: [
+                        {
+                            $project: {
+                                username: 1,
+                                fullName: 1,
+                                avatar: 1,
+                            },
                         },
-                    },
-                ],
+                    ],
+                },
             },
-        },
-        {
-            $unwind: "$owner",
-        },
-    ]);
+            {
+                $unwind: "$owner",
+            },
+        ]),
+        aggregateOptions
+    );
 
     res.status(200).json(
-        new ApiResponse(200, videos, "Videos fetched successfully")
+        new ApiResponse(200, videos, "Self videos fetched successfully")
     );
 });
 
