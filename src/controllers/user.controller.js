@@ -9,6 +9,7 @@ import mongoose, { isValidObjectId } from "mongoose";
 import { Video } from "../models/video.model.js";
 import fs from "fs";
 import { Playlist } from "../models/playlist.model.js";
+import { Tweet } from "../models/tweet.model.js";
 
 // Create a user
 const registerUser = asyncHandler(async (req, res) => {
@@ -800,6 +801,7 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
 });
 
 const getUserTweets = asyncHandler(async (req, res) => {
+    const { userId } = req.params;
     const { page = 1, limit = 10 } = req.query;
 
     // Ensure `limit` is a valid positive integer, default to 10 if invalid
@@ -811,16 +813,14 @@ const getUserTweets = asyncHandler(async (req, res) => {
         page: parsedPage,
     };
 
-    const { userId } = req.params;
     if (!userId) {
         throw new ApiError(
-            401,
-            "userId not received while getting user tweets"
+            400,
+            "Invalid userId received while getting user tweets"
         );
     }
 
     const user = await User.findById(userId);
-
     if (!user) {
         throw new ApiError(404, `No user found for the userId : ${userId}`);
     }
